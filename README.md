@@ -319,21 +319,23 @@ MIT
 
 ---
 
-## 验证记录（2026-06-22，当前状态）
+## 验证记录（2026-06-22，最新收敛版本）
 
-### 运行地址
+### 运行地址（与配置完全一致）
 
-| 项目 | 地址 | 验证状态 |
-|------|------|---------|
-| **前端页面（主入口）** | http://localhost:5173 | ✅ 200 OK，标题"职位列表 - 招聘平台"，完整渲染 |
-| 后端健康检查 | http://localhost:3001/api/health | ✅ 200 OK，`{"status":"ok"}` |
-| 职位列表 API | http://localhost:3001/api/jobs | ✅ 200 OK，5 条数据 |
-| 统计摘要 API | http://localhost:3001/api/jobs/stats/summary | ✅ 200 OK，职位5/投递4 |
-| 投递列表 API | http://localhost:3001/api/applications | ✅ 200 OK，4 条数据 |
-| 前端代理验证 | http://localhost:5173/api/jobs | ✅ 200 OK，代理到后端正常 |
-| **生产构建** | `frontend/dist/` | ✅ 86 modules，169KB JS，3 秒完成 |
+| 项目 | 地址 | 配置文件 | 验证状态 |
+|------|------|---------|---------|
+| **前端页面（主入口）** | **http://localhost:5173** | [vite.config.js](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/vite.config.js#L12-L23) | ✅ 200 OK，标题"职位列表 - 招聘平台" |
+| **后端 API** | **http://localhost:3001** | [server.js](file:///d:/code-space/coding-soler/permission-system-55adee53/backend/server.js#L1-L30) | ✅ 200 OK |
+| 健康检查 | http://localhost:3001/api/health | - | ✅ 200 OK，`{"status":"ok"}` |
+| 职位列表 API | http://localhost:3001/api/jobs | [jobs.js](file:///d:/code-space/coding-soler/permission-system-55adee53/backend/routes/jobs.js#L1-L99) | ✅ 200 OK，5 条数据 |
+| 统计摘要 API | http://localhost:3001/api/jobs/stats/summary | [jobs.js](file:///d:/code-space/coding-soler/permission-system-55adee53/backend/routes/jobs.js#L1-L99) | ✅ 200 OK，职位5/投递4 |
+| 投递列表 API | http://localhost:3001/api/applications | [applications.js](file:///d:/code-space/coding-soler/permission-system-55adee53/backend/routes/applications.js#L1-L80) | ✅ 200 OK，4 条数据 |
+| 前端代理验证 | http://localhost:5173/api/jobs | [vite.config.js](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/vite.config.js#L16-L22) | ✅ 200 OK，代理到后端正常 |
+| **生产构建** | `frontend/dist/` | - | ✅ 86 modules，169KB JS，3.62s 完成 |
+| API 请求封装 | `baseURL: '/api'` | [api.js](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/src/utils/api.js#L1-L38) | ✅ 所有接口走 `/api` 代理 |
 
-### 命令清单（Windows PowerShell）
+### 命令清单（Windows PowerShell，已解决执行策略问题）
 
 ```powershell
 # 0. npm 缓存配置（已内置到 frontend/.npmrc，无需手动执行）
@@ -358,15 +360,15 @@ node.exe smoke-check.js
 # 6. 前端生产构建
 cd frontend ; npm.cmd run build
 # ✓ 86 modules transformed.
-# ✓ built in 3.00s
+# ✓ built in 3.62s
 ```
 
-### 11 条页面路径逐一验证（浏览器 + smoke-check）
+### 11 条页面路径逐一验证（浏览器 + smoke-check 双验证）
 
 | # | 路径 | 页面标题 / 功能 | 验证 |
 |---|------|----------------|------|
 | 1 | `/` | 职位列表 - 招聘平台 + 筛选器 + 5 张卡片 | ✅ |
-| 2 | `/jobs` | 自动重定向到 `/`（302→200） | ✅ |
+| 2 | `/jobs` | 自动重定向到 `/`（无 404） | ✅ |
 | 3 | `/job/1` | 职位详情 - 招聘平台 + 立即投递/编辑按钮 | ✅ |
 | 4 | `/job/new` | 发布新职位 - 招聘平台 + 9 字段表单 | ✅ |
 | 5 | `/job/edit/1` | 编辑职位（表单预填 id=1 数据） | ✅ |
