@@ -65,7 +65,8 @@
           <div v-if="currentRole === 'recruiter'" class="application-actions">
             <select 
               class="form-select" 
-              v-model="statusUpdates[app.id]" 
+              :value="getStatusUpdate(app.id)"
+              @change="setStatusUpdate(app.id, $event.target.value)"
               style="width: 140px; padding: 6px 10px;"
             >
               <option value="">更新状态</option>
@@ -76,7 +77,7 @@
             </select>
             <button 
               class="btn btn-primary" 
-              :disabled="!statusUpdates[app.id]"
+              :disabled="!getStatusUpdate(app.id)"
               @click="updateStatus(app)"
             >
               确认更新
@@ -109,13 +110,14 @@
               <input 
                 type="text" 
                 class="form-input" 
-                v-model="newMessages[app.id]" 
+                :value="getNewMessage(app.id)"
+                @input="setNewMessage(app.id, $event.target.value)"
                 placeholder="输入消息..."
                 @keyup.enter="sendMessage(app.id)"
               />
               <button 
                 class="btn btn-primary" 
-                :disabled="!newMessages[app.id]?.trim()"
+                :disabled="!getNewMessage(app.id)?.trim()"
                 @click="sendMessage(app.id)"
               >
                 发送
@@ -143,8 +145,17 @@ export default {
     const expandedMessageId = ref(null)
     const messagesByApp = reactive({})
     const messagesLoading = ref(false)
-    const statusUpdates = reactive({})
-    const newMessages = reactive({})
+    const statusUpdates = ref({})
+    const newMessages = ref({})
+
+    const getStatusUpdate = (appId) => statusUpdates.value[appId] || ''
+    const setStatusUpdate = (appId, value) => {
+      statusUpdates.value = { ...statusUpdates.value, [appId]: value }
+    }
+    const getNewMessage = (appId) => newMessages.value[appId] || ''
+    const setNewMessage = (appId, value) => {
+      newMessages.value = { ...newMessages.value, [appId]: value }
+    }
 
     const statusLabels = {
       pending: '待处理',
@@ -189,13 +200,13 @@ export default {
     }
 
     const updateStatus = async (app) => {
-      const newStatus = statusUpdates[app.id]
+      const newStatus = getStatusUpdate(app.id)
       if (!newStatus) return
 
       try {
         await applicationApi.updateStatus(app.id, newStatus)
         app.status = newStatus
-        statusUpdates[app.id] = ''
+        setStatusUpdate(app.id, '')
       } catch (err) {
         console.error('更新状态失败:', err)
       }
@@ -227,7 +238,7 @@ export default {
     }
 
     const sendMessage = async (appId) => {
-      const content = newMessages[appId]?.trim()
+      const content = getNewMessage(appId)?.trim()
       if (!content) return
 
       try {
@@ -241,7 +252,7 @@ export default {
           messagesByApp[appId] = []
         }
         messagesByApp[appId].push(msg)
-        newMessages[appId] = ''
+        setNewMessage(appId, '')
       } catch (err) {
         console.error('发送消息失败:', err)
       }
@@ -265,6 +276,10 @@ export default {
       messagesLoading,
       statusUpdates,
       newMessages,
+      getStatusUpdate,
+      setStatusUpdate,
+      getNewMessage,
+      setNewMessage,
       switchTab,
       updateStatus,
       toggleMessagePanel,

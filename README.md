@@ -173,7 +173,7 @@ npm.cmd run dev
 
 前端开发服务器运行在 http://localhost:5173
 
-前端已配置 `/api` 代理到后端 `http://localhost:3001
+前端已配置 `/api` 代理到后端 `http://localhost:3001`
 
 ### 构建生产版本
 
@@ -260,3 +260,104 @@ server: {
 ## License
 
 MIT
+
+---
+
+## 验证记录（2026-06-22）
+
+### 访问地址验证
+
+| 项目 | 地址 | 状态 |
+|------|------|------|
+| 前端页面 | http://localhost:5173 | ✅ 200 OK，完整渲染 |
+| 后端健康检查 | http://localhost:3001/api/health | ✅ 200 OK |
+| 职位列表 API | http://localhost:3001/api/jobs | ✅ 200 OK，5 条数据 |
+| 统计数据 API | http://localhost:3001/api/jobs/stats/summary | ✅ 200 OK |
+| 投递列表 API | http://localhost:3001/api/applications | ✅ 200 OK，4 条数据 |
+| API 代理 | http://localhost:5173/api/jobs | ✅ 200 OK，代理正常 |
+
+### 命令验证
+
+```powershell
+# 安装依赖（使用 npm.cmd 避免 PowerShell 执行策略）
+npm.cmd install --cache .\.npm-cache
+
+# 启动后端
+cd backend ; npm.cmd start
+
+# 启动前端
+cd frontend ; npm.cmd run dev
+
+# 前端构建
+cd frontend ; npm.cmd run build
+# ✓ 85 modules transformed.
+# ✓ built in 3.51s
+# 产物: dist/index.html, dist/assets/index-*.js, dist/assets/index-*.css
+```
+
+### 核心业务流程验证
+
+1. **职位列表与筛选** ✅
+   - 访问 http://localhost:5173/ 显示 5 个职位卡片
+   - 按关键词筛选（"前端" → 1 条结果）
+   - 按城市筛选（"北京" → 1 条结果）
+   - 按状态筛选（"招聘中" → 4 条结果）
+   - 组合筛选（"北京 + 招聘中" → 1 条结果）
+
+2. **职位详情与投递** ✅
+   - 点击职位卡片进入 http://localhost:5173/job/5
+   - 点击"立即投递"打开表单弹窗
+   - 填写姓名/邮箱/手机号/简历后提交
+   - 显示"投递成功"和"查看我的投递"按钮
+   - 统计数据实时更新（总投递数 3 → 4）
+
+3. **投递记录查看** ✅
+   - 访问 http://localhost:5173/applications
+   - 显示 4 条投递记录（含新增的赵六投递）
+   - 标签筛选（全部/待处理/筛选中/面试中/已拒绝）
+
+4. **招聘方角色** ✅
+   - 点击"招聘方"切换视角
+   - 导航变为：职位列表 / 投递管理 / 数据统计 / 发布职位
+   - 投递管理页显示所有投递，支持状态更新和消息沟通
+
+5. **投递状态更新** ✅
+   - 选择"安排面试"状态
+   - 点击"确认更新"
+   - 赵六状态从"待处理"→"面试中"实时更新
+
+6. **沟通消息** ✅
+   - 点击"查看沟通"展开消息面板
+   - 输入消息并发送
+   - 消息实时显示在沟通面板中
+
+7. **数据统计** ✅
+   - 访问 http://localhost:5173/stats
+   - 职位总数: 5
+   - 招聘中职位: 4
+   - 总投递数: 4
+   - 待处理投递: 1
+
+### 异常场景验证
+
+- **重复投递** ✅ 返回 400 错误："您已经投递过该职位，请勿重复投递"
+- **必填项缺失** ✅ 表单提交时显示验证提示
+- **API 未连通** ✅ 页面显示空状态和友好提示
+- **职位已关闭** ✅ 无法投递，显示"职位已关闭"提示
+
+### 关键修复记录
+
+1. **后端路由顺序 Bug**（jobs.js）
+   - 问题：`/stats/summary` 定义在 `/:id` 之后，导致被当作 ID 参数
+   - 修复：将 `/stats/summary` 移到 `/:id` 之前定义
+   - 文件：[jobs.js](file:///d:/code-space/coding-soler/permission-system-55adee53/backend/routes/jobs.js#L1-L99)
+
+2. **Vue 3 响应式 Bug**（Applications.vue）
+   - 问题：`reactive({})` 上动态添加属性时响应式失效，状态选择后按钮仍为 disabled
+   - 修复：改用 `ref({})` + getter/setter 方法，通过替换整个对象触发响应式
+   - 文件：[Applications.vue](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/src/views/Applications.vue#L1-L290)
+
+3. **npm 缓存配置**（.npmrc）
+   - 配置：`cache=../.npm-cache` 避免全局缓存权限问题
+   - 文件：[.npmrc](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/.npmrc)
+

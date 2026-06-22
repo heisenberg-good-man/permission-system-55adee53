@@ -30,6 +30,20 @@ router.get('/', (req, res) => {
   res.json(result);
 });
 
+router.get('/stats/summary', (req, res) => {
+  const totalJobs = data.jobs.length;
+  const openJobs = data.jobs.filter(j => j.status === 'open').length;
+  const totalApplications = data.applications.length;
+  const pendingApplications = data.applications.filter(a => a.status === 'pending').length;
+
+  res.json({
+    totalJobs,
+    openJobs,
+    totalApplications,
+    pendingApplications
+  });
+});
+
 router.get('/:id', (req, res) => {
   const id = parseInt(req.params.id);
   const job = data.jobs.find(j => j.id === id);
@@ -127,20 +141,6 @@ router.delete('/:id', (req, res) => {
 
   data.jobs.splice(jobIndex, 1);
   res.json({ success: true });
-});
-
-router.get('/stats/summary', (req, res) => {
-  const totalJobs = data.jobs.length;
-  const openJobs = data.jobs.filter(j => j.status === 'open').length;
-  const totalApplications = data.applications.length;
-  const pendingApplications = data.applications.filter(a => a.status === 'pending').length;
-
-  res.json({
-    totalJobs,
-    openJobs,
-    totalApplications,
-    pendingApplications
-  });
 });
 
 module.exports = router;

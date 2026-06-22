@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 const rootDir = __dirname;
-const frontendDir = path.join(rootDir, 'frontend');
+const backendDir = path.join(rootDir, 'backend');
 const cacheDir = path.join(rootDir, '.npm-cache');
 const tmpDir = path.join(cacheDir, 'tmp');
 
@@ -18,18 +18,17 @@ const env = {
   TMP: tmpDir
 };
 
-console.log('Installing frontend...');
+console.log('Installing backend...');
 try {
   execSync('npm.cmd install --no-audit --no-fund', {
-    cwd: frontendDir,
+    cwd: backendDir,
     env,
     encoding: 'utf8',
-    timeout: 300000
+    timeout: 120000
   });
-  console.log('Frontend: OK');
+  console.log('Backend: OK');
 } catch (e) {
-  console.log('Frontend install error:', e.message.substring(0, 500));
+  console.log('Backend install error:', e.message.substring(0, 200));
 }
 
-console.log('Frontend vue installed:', fs.existsSync(path.join(frontendDir, 'node_modules', 'vue', 'package.json')));
-console.log('Frontend vite installed:', fs.existsSync(path.join(frontendDir, 'node_modules', 'vite', 'package.json')));
+console.log('Backend express installed:', fs.existsSync(path.join(backendDir, 'node_modules', 'express', 'package.json')));
