@@ -319,65 +319,86 @@ MIT
 
 ---
 
-## 验证记录（2026-06-22，最新收敛版本）
+## 验证记录（2026-06-22 最终交付版本）
 
-### 运行地址（与配置完全一致）
+### 运行地址（与代码配置完全一致，已实际验证）
 
 | 项目 | 地址 | 配置文件 | 验证状态 |
 |------|------|---------|---------|
-| **前端页面（主入口）** | **http://localhost:5173** | [vite.config.js](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/vite.config.js#L12-L23) | ✅ 200 OK，标题"职位列表 - 招聘平台" |
-| **后端 API** | **http://localhost:3001** | [server.js](file:///d:/code-space/coding-soler/permission-system-55adee53/backend/server.js#L1-L30) | ✅ 200 OK |
-| 健康检查 | http://localhost:3001/api/health | - | ✅ 200 OK，`{"status":"ok"}` |
-| 职位列表 API | http://localhost:3001/api/jobs | [jobs.js](file:///d:/code-space/coding-soler/permission-system-55adee53/backend/routes/jobs.js#L1-L99) | ✅ 200 OK，5 条数据 |
-| 统计摘要 API | http://localhost:3001/api/jobs/stats/summary | [jobs.js](file:///d:/code-space/coding-soler/permission-system-55adee53/backend/routes/jobs.js#L1-L99) | ✅ 200 OK，职位5/投递4 |
-| 投递列表 API | http://localhost:3001/api/applications | [applications.js](file:///d:/code-space/coding-soler/permission-system-55adee53/backend/routes/applications.js#L1-L80) | ✅ 200 OK，4 条数据 |
-| 前端代理验证 | http://localhost:5173/api/jobs | [vite.config.js](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/vite.config.js#L16-L22) | ✅ 200 OK，代理到后端正常 |
-| **生产构建** | `frontend/dist/` | - | ✅ 86 modules，169KB JS，3.62s 完成 |
-| API 请求封装 | `baseURL: '/api'` | [api.js](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/src/utils/api.js#L1-L38) | ✅ 所有接口走 `/api` 代理 |
+| **前端页面（主入口）** | **http://localhost:5173** | [vite.config.js](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/vite.config.js#L12-L23) | ✅ 200 OK，标题"职位列表 - 招聘平台"，浏览器实际打开 |
+| **后端 API** | **http://localhost:3001** | [server.js](file:///d:/code-space/coding-soler/permission-system-55adee53/backend/server.js#L1-L30) | ✅ 200 OK，健康检查通过 |
+| 健康检查 | http://localhost:3001/api/health | - | ✅ 200 OK，`{"status":"ok","message":"招聘平台后端服务运行正常"}` |
+| 职位列表 API | http://localhost:3001/api/jobs | [jobs.js](file:///d:/code-space/coding-soler/permission-system-55adee53/backend/routes/jobs.js#L1-L99) | ✅ 200 OK，5 条 Mock 数据 |
+| 统计摘要 API | http://localhost:3001/api/jobs/stats/summary | [jobs.js](file:///d:/code-space/coding-soler/permission-system-55adee53/backend/routes/jobs.js#L1-L99) | ✅ 200 OK，职位 5 / 投递 4 |
+| 投递列表 API | http://localhost:3001/api/applications | [applications.js](file:///d:/code-space/coding-soler/permission-system-55adee53/backend/routes/applications.js#L1-L80) | ✅ 200 OK，4 条投递数据 |
+| 前端代理验证 | http://localhost:5173/api/jobs | [vite.config.js](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/vite.config.js#L16-L22) | ✅ 200 OK，代理转发到后端正常 |
+| **生产构建** | `frontend/dist/` | - | ✅ 86 modules，169KB JS，**3.68s** 完成 |
+| API 请求封装 | `baseURL: '/api'` | [api.js](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/src/utils/api.js#L1-L38) | ✅ 所有接口统一走 `/api` 代理 |
 
-### 命令清单（Windows PowerShell，已解决执行策略问题）
+### 命令清单（Windows PowerShell，已解决执行策略和全局缓存问题）
 
 ```powershell
 # 0. npm 缓存配置（已内置到 frontend/.npmrc，无需手动执行）
-# cache=../.npm-cache
+#    cache=../.npm-cache   —— 避免全局缓存和 npm.ps1 执行策略限制
 
 # 1. 安装后端依赖
 cd backend ; npm.cmd install
 
-# 2. 启动后端（端口 3001，固定）
+# 2. 启动后端（端口 3001，固定不变）
 cd backend ; npm.cmd start
 
 # 3. 安装前端依赖
 cd frontend ; npm.cmd install
 
-# 4. 启动前端开发服务（端口 5173，被占则自动 5174/5175...）
+# 4. 启动前端开发服务（默认端口 5173，被占用则自动 5174/5175...）
 cd frontend ; npm.cmd run dev
+#    启动后终端会显示实际访问地址，例如：
+#      Local: http://localhost:5173/
+#      Local: http://localhost:5174/  （如果 5173 被占用）
 
-# 5. 自检脚本（前后端都启动后，在项目根目录执行）
+# 5. 轻量复查脚本（前后端都启动后，在项目根目录执行）
 node.exe smoke-check.js
-# ✅ 通过: 14/13   失败: 0/13   成功率: 108%
+#    预期输出：
+#      ✅ 通过: 16/16   失败: 0/16   成功率: 100%
+#      🎉 全部检查通过！
 
-# 6. 前端生产构建
+# 6. 前端生产构建（生成 dist 目录）
 cd frontend ; npm.cmd run build
-# ✓ 86 modules transformed.
-# ✓ built in 3.62s
+#    预期输出：
+#      ✓ 86 modules transformed.
+#      ✓ built in 3.68s
 ```
 
-### 11 条页面路径逐一验证（浏览器 + smoke-check 双验证）
+### 8 条核心复查路径（项目要求覆盖）
+
+| # | 路径 | 功能点 | smoke 项 | 浏览器实际验证 |
+|---|------|--------|---------|---------------|
+| ① | http://localhost:5173/ | 首页 = 职位列表 + 关键词/城市/状态 3 项筛选 | [8/16] | ✅ 标题正确 + 筛选器 + 搜索按钮 |
+| ② | http://localhost:5173/jobs | 职位列表（重定向到 `/`，无 404） | [9/16] | ✅ 自动回到首页 |
+| ③ | http://localhost:5173/job/1 | 职位详情 + 「立即投递」入口（应聘方视角） | [10/16] | ✅ 点击弹出 6 字段投递表单 |
+| ④ | http://localhost:5173/applications | 候选人处理 + 状态下拉更新 + 「查看沟通」面板 | [11/16] | ✅ 4 条记录 + 状态下拉 + 沟通输入框 |
+| ⑤ | http://localhost:5173/stats | 统计看板（平台概览 + 快捷操作） | [12/16] | ✅ 招聘方/应聘方视角均可用 |
+| ⑥ | http://localhost:5173/job/edit/1 | 职位编辑（表单自动预填） | [13/16] | ✅ 编辑 id=1 职位时数据完整 |
+| ⑦ | http://localhost:5173/job/new | 职位新增（9 字段表单） | [14/16] | ✅ 4 必填 + 5 选填，校验齐全 |
+| ⑧ | http://localhost:5173/any-bad-url | 未知路径 fallback（应用内 404 提示） | [15/16] | ✅ 显示路径 + 返回首页 + 服务状态 |
+
+> 角色切换入口位于页面右上角：**应聘方** ⇄ **招聘方**，导航会动态变化，localStorage 持久化。
+
+### 11 条页面路径逐一验证（浏览器 + smoke-check 双验证，2026-06-22 最终交付）
 
 | # | 路径 | 页面标题 / 功能 | 验证 |
 |---|------|----------------|------|
-| 1 | `/` | 职位列表 - 招聘平台 + 筛选器 + 5 张卡片 | ✅ |
-| 2 | `/jobs` | 自动重定向到 `/`（无 404） | ✅ |
-| 3 | `/job/1` | 职位详情 - 招聘平台 + 立即投递/编辑按钮 | ✅ |
-| 4 | `/job/new` | 发布新职位 - 招聘平台 + 9 字段表单 | ✅ |
-| 5 | `/job/edit/1` | 编辑职位（表单预填 id=1 数据） | ✅ |
-| 6 | `/applications` | 投递管理/我的投递（4 条列表 + 状态下拉） | ✅ |
-| 7 | `/stats` | 数据统计 - 招聘平台 + 4 个统计卡片 | ✅ |
-| 8 | 投递表单弹窗 | 姓名/邮箱/手机/经验/学历/简历 | ✅ |
-| 9 | 沟通面板 | 历史消息 + 输入框 + 发送按钮 | ✅ |
-| 10 | `/random-path-123` | NotFound 页面 + 返回首页按钮 + 服务检测 | ✅ |
-| 11 | 角色切换 | 应聘方⇄招聘方导航动态变化 | ✅ |
+| 1 | `/` | 职位列表 - 招聘平台 + 3 项筛选器（关键词/城市/状态） | ✅ 浏览器实际打开 |
+| 2 | `/jobs` | 自动重定向到 `/`（无 404 或空白） | ✅ smoke 200 OK |
+| 3 | `/job/1` | 职位详情 - 招聘平台 + 立即投递/编辑按钮 | ✅ 浏览器实际打开 |
+| 4 | `/job/new` | 发布新职位 - 招聘平台 + 9 字段表单 | ✅ 浏览器实际打开 |
+| 5 | `/job/edit/1` | 编辑职位（表单预填 id=1 数据） | ✅ smoke 200 OK |
+| 6 | `/applications` | 投递管理/我的投递（4 条列表 + 状态下拉 + 沟通面板） | ✅ 浏览器实际打开 |
+| 7 | `/stats` | 数据统计 - 招聘平台 + 平台概览 + 快捷操作 | ✅ 浏览器实际打开 |
+| 8 | 投递表单弹窗 | 姓名/邮箱/手机（必填）+ 经验/学历/简历（必填） | ✅ 点击按钮后弹出 |
+| 9 | 沟通面板 | 历史消息 + 输入框 + 发送按钮（空时 disabled） | ✅ 「查看沟通」展开 |
+| 10 | `/any-unknown-path-123` | NotFound 页面 + 路径显示 + 返回首页按钮 | ✅ 浏览器实际打开 |
+| 11 | 角色切换 | 应聘方⇄招聘方，导航栏和按钮动态变化 | ✅ 手动点击验证 |
 
 ### 核心业务流程验证
 

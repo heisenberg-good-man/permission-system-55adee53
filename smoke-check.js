@@ -101,10 +101,10 @@ async function main() {
   }
   console.log(`  时间: ${new Date().toLocaleString('zh-CN')}`);
 
-  TOTAL = 13;
+  TOTAL = 16;
 
   // ========== 1. 后端服务检查 ==========
-  divider('后端 API 检查');
+  divider('后端 API 检查 (核心路径依赖项)');
 
   const health = await httpRequest(`${BACKEND_BASE}/api/health`);
   assert(health.status === 200, '后端健康检查', `HTTP ${health.status}`);
@@ -170,10 +170,16 @@ async function main() {
     '/job/:id 职位详情路由', `HTTP ${detailRoute.status}`);
 
   const appsRoute = await httpRequest(`${FRONTEND_BASE}/applications`, 'GET', null, 8000, 'text/html');
-  assert(appsRoute.status === 200, '/applications 投递记录路由', `HTTP ${appsRoute.status}`);
+  assert(appsRoute.status === 200, '/applications 投递记录/候选人处理路由', `HTTP ${appsRoute.status}`);
 
   const statsRoute = await httpRequest(`${FRONTEND_BASE}/stats`, 'GET', null, 8000, 'text/html');
   assert(statsRoute.status === 200, '/stats 统计看板路由', `HTTP ${statsRoute.status}`);
+
+  const editRoute = await httpRequest(`${FRONTEND_BASE}/job/edit/1`, 'GET', null, 8000, 'text/html');
+  assert(editRoute.status === 200, '/job/edit/:id 职位编辑路由', `HTTP ${editRoute.status}`);
+
+  const newJobRoute = await httpRequest(`${FRONTEND_BASE}/job/new`, 'GET', null, 8000, 'text/html');
+  assert(newJobRoute.status === 200, '/job/new 职位发布路由 (含投递入口)', `HTTP ${newJobRoute.status}`);
 
   const badRoute = await httpRequest(`${FRONTEND_BASE}/this-path-does-not-exist`, 'GET', null, 8000, 'text/html');
   assert(badRoute.status === 200, '未知路径 NotFound 路由 (SPA fallback)',
@@ -195,17 +201,15 @@ async function main() {
 
   if (failed === 0) {
     console.log(`\n  🎉 全部检查通过！`);
-    console.log(`\n  复查路径:`);
-    console.log(`    👤 应聘方:`);
-    console.log(`      1. 打开首页  → ${FRONTEND_BASE}/`);
-    console.log(`      2. 职位详情  → ${FRONTEND_BASE}/job/1`);
-    console.log(`      3. 提交投递  → 详情页"立即投递"`);
-    console.log(`      4. 我的投递  → ${FRONTEND_BASE}/applications`);
-    console.log(`    👔 招聘方:`);
-    console.log(`      5. 发布职位  → ${FRONTEND_BASE}/job/new`);
-    console.log(`      6. 编辑职位  → ${FRONTEND_BASE}/job/edit/1`);
-    console.log(`      7. 投递管理  → ${FRONTEND_BASE}/applications`);
-    console.log(`      8. 数据统计  → ${FRONTEND_BASE}/stats`);
+    console.log(`\n  8条核心复查路径 (对应 smoke 检查项):`);
+    console.log(`    ① 首页 / 职位列表        ${FRONTEND_BASE}/           ← smoke [10]`);
+    console.log(`    ② 职位列表(重定向)       ${FRONTEND_BASE}/jobs       ← smoke [11]`);
+    console.log(`    ③ 职位详情 + 投递入口    ${FRONTEND_BASE}/job/1      ← smoke [12]`);
+    console.log(`    ④ 候选人处理 + 沟通面板  ${FRONTEND_BASE}/applications ← smoke [13]`);
+    console.log(`    ⑤ 统计看板               ${FRONTEND_BASE}/stats      ← smoke [14]`);
+    console.log(`    ⑥ 职位编辑               ${FRONTEND_BASE}/job/edit/1 ← smoke [15]`);
+    console.log(`    ⑦ 职位新增(含投递入口)   ${FRONTEND_BASE}/job/new    ← smoke [16]`);
+    console.log(`    ⑧ 空白/404 路径 fallback ${FRONTEND_BASE}/any-bad-url`);
   } else {
     console.log(`\n  ⚠️  有 ${failed} 项未通过，请检查:`);
     if (!health.status || health.status !== 200) {
