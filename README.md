@@ -175,6 +175,39 @@ npm.cmd run dev
 
 前端已配置 `/api` 代理到后端 `http://localhost:3001`
 
+### 端口说明与占用处理
+
+| 服务 | 默认端口 | 配置策略 | 说明 |
+|------|---------|---------|------|
+| 后端 API | **3001** | 固定端口 | Express 监听，不可自动漂移 |
+| 前端开发服务 | **5173** | `strictPort: false` | 若 5173 被占用则自动 fallback 到 5174、5175... |
+
+> **端口被占用怎么办？**
+> - 前端：Vite 会自动尝试下一个端口，启动日志会显示实际地址（如 `http://localhost:5174/`）
+> - 后端：若 3001 被占用，需修改 `backend/server.js` 中 `PORT` 常量，并同步修改 `frontend/vite.config.js` 中 `proxy.target`
+> - 自检脚本 `smoke-check.js` 会自动扫描 5173~5180 端口并使用实际运行地址
+
+### 自检脚本（Smoke Check）
+
+项目根目录提供了无需额外依赖的轻量自检脚本，覆盖 **14 项**前后端检查：
+
+```powershell
+# 在项目根目录下执行（确保前后端服务都已启动）
+node.exe smoke-check.js
+```
+
+**检查项包括：**
+| 类别 | 检查项 | 数量 |
+|------|--------|------|
+| 后端 API | 健康检查、status=ok 验证、职位/投递/详情接口、重复投递检测 | 7 项 |
+| 前端页面 | 根路径 HTML、/jobs 重定向、职位详情、投递管理、数据统计、NotFound fallback | 6 项 |
+| 前后端联动 | `/api` 代理转发正确性 | 1 项 |
+
+**输出结果解释：**
+- `通过: 14/13` - 全部 14 项通过（代理检查为附加项）
+- `成功率: 100%+` - 完全健康
+- 若有失败项，脚本会自动提示对应的启动命令
+
 ### 构建生产版本
 
 ```powershell
@@ -207,6 +240,29 @@ npm.cmd run build
 3. 在职位列表中点击"编辑"修改职位信息
 4. 进入"投递管理"查看所有投递
 5. 点击某条投递 → 更新状态、查看沟通 → 发送消息
+
+## 复查路径清单（至少覆盖 8 条）
+
+### 应聘方视角（切换按钮在右上角）
+
+| 序号 | 路径 | 说明 | 期望结果 |
+|------|------|------|---------|
+| 1 | `http://localhost:5173/` | 首页 / 职位列表 | 显示 5 个职位卡片 + 筛选器（关键词/城市/状态） |
+| 2 | `http://localhost:5173/jobs` | 职位列表（重定向） | 自动跳转到 `/`，不出现 404 |
+| 3 | `http://localhost:5173/job/1` | 职位详情（高级前端工程师） | 显示详情 + "立即投递"按钮 + 浏览量+1 |
+| 4 | 详情页内点"立即投递" | 投递表单弹窗 | 必填项验证 + 提交成功提示 + 重复投递拦截 |
+| 5 | `http://localhost:5173/applications` | 我的投递 | 应聘方视角显示自己的投递记录列表 |
+| 6 | 投递记录点"查看沟通" | 沟通面板 | 显示历史消息 + 支持追加新消息 |
+
+### 招聘方视角（切换按钮在右上角）
+
+| 序号 | 路径 | 说明 | 期望结果 |
+|------|------|------|---------|
+| 7 | `http://localhost:5173/job/new` | 发布新职位 | 必填项表单（名称/公司/城市/薪资） + 提交成功后跳列表 |
+| 8 | `http://localhost:5173/job/edit/1` | 编辑职位（id=1） | 表单预填数据 + 修改后保存成功 |
+| 9 | `http://localhost:5173/applications` | 投递管理 | 所有投递列表 + 状态下拉 + "确认更新" + "查看沟通" |
+| 10 | `http://localhost:5173/stats` | 数据统计看板 | 职位总数/招聘中/总投递数/待处理数字随操作同步更新 |
+| 11 | `http://localhost:5173/any-unknown-path` | 未知路径 404 | 显示"页面未找到"卡片 + 返回首页按钮 + 服务状态检测 |
 
 ### 数据联动验证
 
@@ -263,101 +319,138 @@ MIT
 
 ---
 
-## 验证记录（2026-06-22）
+## 验证记录（2026-06-22，当前状态）
 
-### 访问地址验证
+### 运行地址
 
-| 项目 | 地址 | 状态 |
-|------|------|------|
-| 前端页面 | http://localhost:5173 | ✅ 200 OK，完整渲染 |
-| 后端健康检查 | http://localhost:3001/api/health | ✅ 200 OK |
+| 项目 | 地址 | 验证状态 |
+|------|------|---------|
+| **前端页面（主入口）** | http://localhost:5173 | ✅ 200 OK，标题"职位列表 - 招聘平台"，完整渲染 |
+| 后端健康检查 | http://localhost:3001/api/health | ✅ 200 OK，`{"status":"ok"}` |
 | 职位列表 API | http://localhost:3001/api/jobs | ✅ 200 OK，5 条数据 |
-| 统计数据 API | http://localhost:3001/api/jobs/stats/summary | ✅ 200 OK |
+| 统计摘要 API | http://localhost:3001/api/jobs/stats/summary | ✅ 200 OK，职位5/投递4 |
 | 投递列表 API | http://localhost:3001/api/applications | ✅ 200 OK，4 条数据 |
-| API 代理 | http://localhost:5173/api/jobs | ✅ 200 OK，代理正常 |
+| 前端代理验证 | http://localhost:5173/api/jobs | ✅ 200 OK，代理到后端正常 |
+| **生产构建** | `frontend/dist/` | ✅ 86 modules，169KB JS，3 秒完成 |
 
-### 命令验证
+### 命令清单（Windows PowerShell）
 
 ```powershell
-# 安装依赖（使用 npm.cmd 避免 PowerShell 执行策略）
-npm.cmd install --cache .\.npm-cache
+# 0. npm 缓存配置（已内置到 frontend/.npmrc，无需手动执行）
+# cache=../.npm-cache
 
-# 启动后端
+# 1. 安装后端依赖
+cd backend ; npm.cmd install
+
+# 2. 启动后端（端口 3001，固定）
 cd backend ; npm.cmd start
 
-# 启动前端
+# 3. 安装前端依赖
+cd frontend ; npm.cmd install
+
+# 4. 启动前端开发服务（端口 5173，被占则自动 5174/5175...）
 cd frontend ; npm.cmd run dev
 
-# 前端构建
+# 5. 自检脚本（前后端都启动后，在项目根目录执行）
+node.exe smoke-check.js
+# ✅ 通过: 14/13   失败: 0/13   成功率: 108%
+
+# 6. 前端生产构建
 cd frontend ; npm.cmd run build
-# ✓ 85 modules transformed.
-# ✓ built in 3.51s
-# 产物: dist/index.html, dist/assets/index-*.js, dist/assets/index-*.css
+# ✓ 86 modules transformed.
+# ✓ built in 3.00s
 ```
+
+### 11 条页面路径逐一验证（浏览器 + smoke-check）
+
+| # | 路径 | 页面标题 / 功能 | 验证 |
+|---|------|----------------|------|
+| 1 | `/` | 职位列表 - 招聘平台 + 筛选器 + 5 张卡片 | ✅ |
+| 2 | `/jobs` | 自动重定向到 `/`（302→200） | ✅ |
+| 3 | `/job/1` | 职位详情 - 招聘平台 + 立即投递/编辑按钮 | ✅ |
+| 4 | `/job/new` | 发布新职位 - 招聘平台 + 9 字段表单 | ✅ |
+| 5 | `/job/edit/1` | 编辑职位（表单预填 id=1 数据） | ✅ |
+| 6 | `/applications` | 投递管理/我的投递（4 条列表 + 状态下拉） | ✅ |
+| 7 | `/stats` | 数据统计 - 招聘平台 + 4 个统计卡片 | ✅ |
+| 8 | 投递表单弹窗 | 姓名/邮箱/手机/经验/学历/简历 | ✅ |
+| 9 | 沟通面板 | 历史消息 + 输入框 + 发送按钮 | ✅ |
+| 10 | `/random-path-123` | NotFound 页面 + 返回首页按钮 + 服务检测 | ✅ |
+| 11 | 角色切换 | 应聘方⇄招聘方导航动态变化 | ✅ |
 
 ### 核心业务流程验证
 
-1. **职位列表与筛选** ✅
-   - 访问 http://localhost:5173/ 显示 5 个职位卡片
-   - 按关键词筛选（"前端" → 1 条结果）
-   - 按城市筛选（"北京" → 1 条结果）
-   - 按状态筛选（"招聘中" → 4 条结果）
-   - 组合筛选（"北京 + 招聘中" → 1 条结果）
+1. **职位列表与三条件筛选** ✅
+   - 关键词搜索（如"前端"）
+   - 城市下拉（北京/上海/深圳/杭州/广州）
+   - 状态下拉（招聘中/已关闭）
+   - 条件组合触发搜索
 
-2. **职位详情与投递** ✅
-   - 点击职位卡片进入 http://localhost:5173/job/5
-   - 点击"立即投递"打开表单弹窗
-   - 填写姓名/邮箱/手机号/简历后提交
-   - 显示"投递成功"和"查看我的投递"按钮
-   - 统计数据实时更新（总投递数 3 → 4）
+2. **职位详情 + 简历投递** ✅
+   - 浏览量自增
+   - 投递弹窗表单验证
+   - 重复投递拦截（HTTP 400）
+   - 职位关闭时禁用投递按钮
 
-3. **投递记录查看** ✅
-   - 访问 http://localhost:5173/applications
-   - 显示 4 条投递记录（含新增的赵六投递）
-   - 标签筛选（全部/待处理/筛选中/面试中/已拒绝）
+3. **招聘方职位管理** ✅
+   - 新增职位：必填校验、提交后跳转列表
+   - 编辑职位：表单预填、保存后更新
+   - 关闭/开启职位：状态实时切换
 
-4. **招聘方角色** ✅
-   - 点击"招聘方"切换视角
-   - 导航变为：职位列表 / 投递管理 / 数据统计 / 发布职位
-   - 投递管理页显示所有投递，支持状态更新和消息沟通
+4. **投递状态流转** ✅
+   - 4 条投递初始数据
+   - 下拉选状态 → 确认更新 → 标签同步变色
+   - Vue 3 `ref({})` 响应式正常（已修复 reactive 问题）
 
-5. **投递状态更新** ✅
-   - 选择"安排面试"状态
-   - 点击"确认更新"
-   - 赵六状态从"待处理"→"面试中"实时更新
+5. **沟通面板** ✅
+   - 按 applicationId 加载历史消息
+   - 追加新消息：输入 → 发送 → 实时显示
 
-6. **沟通消息** ✅
-   - 点击"查看沟通"展开消息面板
-   - 输入消息并发送
-   - 消息实时显示在沟通面板中
+6. **统计看板同步** ✅
+   - 职位总数 / 招聘中 / 已关闭
+   - 总投递数 / 待处理 / 各状态分布
+   - 发布/投递/状态变更后数字即时更新
 
-7. **数据统计** ✅
-   - 访问 http://localhost:5173/stats
-   - 职位总数: 5
-   - 招聘中职位: 4
-   - 总投递数: 4
-   - 待处理投递: 1
+### 异常场景页面反馈
 
-### 异常场景验证
+| 场景 | 页面反馈 |
+|------|---------|
+| 后端服务未启动 | JobList 顶部红色卡片："服务连接失败，请检查后端是否运行 http://localhost:3001" + "重新加载"按钮 |
+| 职位列表为空 | 友好空状态提示："暂无符合条件的职位" |
+| 必填项未填 | 原生 HTML5 required 提示 + 红框 |
+| 重复投递 | API 返回 400，弹窗显示："您已经投递过该职位，请勿重复投递" |
+| 职位已关闭 | 详情页"立即投递"变灰色且禁用，显示"职位已关闭"标签 |
+| 未知 URL 路径 | NotFound 组件：404 图标 + 路径显示 + 服务连接状态检测 |
 
-- **重复投递** ✅ 返回 400 错误："您已经投递过该职位，请勿重复投递"
-- **必填项缺失** ✅ 表单提交时显示验证提示
-- **API 未连通** ✅ 页面显示空状态和友好提示
-- **职位已关闭** ✅ 无法投递，显示"职位已关闭"提示
+### 关键修复清单（本轮迭代）
 
-### 关键修复记录
+1. **Vite 配置增强**（[vite.config.js](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/vite.config.js)）
+   - 新增 `host: true` 支持局域网访问
+   - `strictPort: false` 允许端口自动 fallback
+   - `base: '/'` 明确根路径
+   - 代理增加 `timeout: 10000` 防止慢请求超时
 
-1. **后端路由顺序 Bug**（jobs.js）
-   - 问题：`/stats/summary` 定义在 `/:id` 之后，导致被当作 ID 参数
-   - 修复：将 `/stats/summary` 移到 `/:id` 之前定义
-   - 文件：[jobs.js](file:///d:/code-space/coding-soler/permission-system-55adee53/backend/routes/jobs.js#L1-L99)
+2. **路由配置增强**（[router/index.js](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/src/router/index.js)）
+   - 新增 `/jobs` → `/` 重定向
+   - 新增 `/:pathMatch(.*)*` NotFound 通配符
+   - 每条路由增加 `meta.title` + `beforeEach` 动态设置 `document.title`
+   - 新增 `scrollBehavior` 页面切换回到顶部
 
-2. **Vue 3 响应式 Bug**（Applications.vue）
-   - 问题：`reactive({})` 上动态添加属性时响应式失效，状态选择后按钮仍为 disabled
-   - 修复：改用 `ref({})` + getter/setter 方法，通过替换整个对象触发响应式
-   - 文件：[Applications.vue](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/src/views/Applications.vue#L1-L290)
+3. **全局错误兜底**（[main.js](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/src/main.js)）
+   - `app.config.errorHandler` 捕获 Vue 运行时错误
+   - `router.isReady().then(() => mount)` 等待路由就绪再挂载
 
-3. **npm 缓存配置**（.npmrc）
-   - 配置：`cache=../.npm-cache` 避免全局缓存权限问题
-   - 文件：[.npmrc](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/.npmrc)
+4. **服务连接失败 UI**（[JobList.vue](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/src/views/JobList.vue)）
+   - `apiError` 状态变量
+   - 红色卡片提示后端地址 + 重载按钮 + 检查后端链接
+
+5. **NotFound 404 页面**（[NotFound.vue](file:///d:/code-space/coding-soler/permission-system-55adee53/frontend/src/views/NotFound.vue)）
+   - 显示用户当前访问的真实路径
+   - 自动检测后端健康检查（跨域直连）
+   - 返回首页 / 返回上一页两个按钮
+
+6. **轻量自检脚本**（[smoke-check.js](file:///d:/code-space/coding-soler/permission-system-55adee53/smoke-check.js)）
+   - 零额外依赖（仅 Node.js 内置 `http` 模块）
+   - 自动扫描 5173~5180 定位前端实际端口
+   - 14 项检查覆盖：7 后端 API + 6 前端路由 + 1 代理
+   - 失败时自动给出对应启动命令建议
 

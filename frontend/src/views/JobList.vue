@@ -44,6 +44,18 @@
 
     <div v-if="loading" class="card loading">加载中...</div>
 
+    <div v-else-if="apiError" class="card empty-state">
+      <div class="empty-state-icon">⚠️</div>
+      <div class="empty-state-text" style="color: #e53e3e;">服务连接失败</div>
+      <div style="color: #718096; margin-top: 8px; margin-bottom: 16px; font-size: 14px;">
+        无法访问后端接口，请确认后端服务已启动（http://localhost:3001）
+      </div>
+      <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+        <button class="btn btn-primary" @click="fetchJobs">重新加载</button>
+        <a href="http://localhost:3001/api/health" target="_blank" class="btn btn-secondary">检查后端</a>
+      </div>
+    </div>
+
     <div v-else-if="jobs.length === 0" class="card empty-state">
       <div class="empty-state-icon">📭</div>
       <div class="empty-state-text">暂无符合条件的职位</div>
@@ -90,6 +102,7 @@ export default {
     const router = useRouter()
     const jobs = ref([])
     const loading = ref(false)
+    const apiError = ref(null)
     const filters = reactive({
       keyword: '',
       city: '',
@@ -98,6 +111,7 @@ export default {
 
     const fetchJobs = async () => {
       loading.value = true
+      apiError.value = null
       try {
         const params = {}
         if (filters.keyword) params.keyword = filters.keyword
@@ -107,6 +121,8 @@ export default {
         jobs.value = data
       } catch (err) {
         console.error('获取职位列表失败:', err)
+        apiError.value = err?.message || err?.error || '连接失败'
+        jobs.value = []
       } finally {
         loading.value = false
       }
@@ -123,6 +139,7 @@ export default {
     return {
       jobs,
       loading,
+      apiError,
       filters,
       fetchJobs,
       goToDetail
